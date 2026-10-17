@@ -1,4 +1,4 @@
-const CACHE='dispatcher-cc-v11';
+const CACHE='dispatcher-cc-v12';
 const ASSETS=['./manifest.webmanifest','./icon.svg'];
 
 const EXTRA_CSS=`
@@ -65,7 +65,8 @@ function esc(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/<
 
 const EXTRA_JS=`<script>(function(){
  const nav=document.getElementById('mobileBottomNav');
- if(nav){nav.querySelectorAll('[data-mobile-page]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.mobilePage;if(typeof go==='function')go(id);nav.querySelectorAll('[data-mobile-page]').forEach(x=>x.classList.toggle('active',x===btn));}));const more=document.getElementById('mobileMoreBtn');if(more)more.addEventListener('click',()=>document.getElementById('sidebar')?.classList.add('open'));}
+ if(nav){nav.querySelectorAll('[data-mobile-page]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.mobilePage;if(typeof go==='function')go(id);nav.querySelectorAll('[data-mobile-page]').forEach(x=>x.classList.toggle('active',x===btn));}));const more=document.getElementById('mobileMoreBtn');if(more)more.addEventListener('click',()=>{const side=document.getElementById('sidebar');if(!side)return;side.classList.toggle('open');more.setAttribute('aria-expanded',String(side.classList.contains('open')));});
+ document.addEventListener('click',e=>{const side=document.getElementById('sidebar');if(!side?.classList.contains('open'))return;if(side.contains(e.target)||document.getElementById('mobileMoreBtn')?.contains(e.target))return;side.classList.remove('open');document.getElementById('mobileMoreBtn')?.setAttribute('aria-expanded','false');});}
  document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',async()=>{const t=btn.getAttribute('data-copy');try{await navigator.clipboard.writeText(t);btn.textContent='Copied ✓';setTimeout(()=>btn.textContent='Copy',1200)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();btn.textContent='Copied ✓';setTimeout(()=>btn.textContent='Copy',1200)}}));
  const labels={phrases:['💬','Phrasebook','Broker & driver phrases'],flashcards:['🧠','Flashcards','Practice & review'],situations:['⚡','Situation Assistant','Real-world problems'],terminology:['📚','Terminology','Terms & abbreviations']};
  Object.entries(labels).forEach(([id,v])=>{const b=document.querySelector('.nav-btn[data-page="'+id+'"]');if(b){b.classList.add('learn-nav-btn');b.innerHTML='<span class="learn-nav-icon">'+v[0]+'</span><span class="learn-nav-copy"><span class="learn-nav-title">'+v[1]+'</span><span class="learn-nav-sub">'+v[2]+'</span></span>';}});
