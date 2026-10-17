@@ -36,7 +36,7 @@ function buildImported(data){
 }
 function mergeRecords(existing,incoming,match){
  const result=[...existing];let created=0,updated=0;
- for(const fresh of incoming){const idx=result.findIndex(old=>match(old,fresh));if(idx>=0){result[idx]={...result[idx],...fresh,updated:Date.now()};updated++}else{result.push({...fresh,created:Date.now(),updated:Date.now()});created++}}
+ for(const fresh of incoming){const idx=result.findIndex(old=>match(old,fresh));if(idx>=0){result[idx]={...result[idx],...fresh,_id:result[idx]._id,updated:Date.now()};updated++}else{result.push({...fresh,created:Date.now(),updated:Date.now()});created++}}
  return {result,created,updated};
 }
 function backupBeforeImport(){
