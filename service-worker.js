@@ -1,4 +1,4 @@
-const CACHE='dispatcher-cc-v2';
+const CACHE='dispatcher-cc-v3';
 const ASSETS=['./manifest.webmanifest','./icon.svg'];
 
 const MOBILE_CSS=`
@@ -6,6 +6,8 @@ const MOBILE_CSS=`
 @media(max-width:620px){
   body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
   .topbar{top:0;padding:calc(8px + env(safe-area-inset-top)) 12px 9px;gap:8px}
+  .mobile-menu{display:none!important}
+  .topbar .search{max-width:none;flex:1}
   .topbar .icon-btn{min-width:46px;min-height:46px;border-radius:14px;font-size:18px}
   .topbar .search input{min-height:46px;font-size:16px;border-radius:14px}
   .sidebar{padding-top:calc(24px + env(safe-area-inset-top));padding-bottom:calc(90px + env(safe-area-inset-bottom))}
