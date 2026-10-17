@@ -176,7 +176,20 @@ function updateDashboard(){
  $('recentLoads').innerHTML=rl.length?rl.map(l=>`<div class="quick-item"><div><b>${esc(l.id)}</b><div class="muted">${esc(l.puCity)}, ${esc(l.puState)} → ${esc(l.delCity)}, ${esc(l.delState)}</div></div><div style="text-align:right">${badge(l.status)}<div class="muted">${money(l.rate)}</div></div></div>`).join(''):'<div class="empty">No loads yet.</div>';
  updateDashboardOperations();const db=drivers.slice(0,6);$('driverBoard').innerHTML=db.length?db.map(d=>`<div class="quick-item"><div><b>${esc(d.name)}</b><div class="muted">Truck ${esc(d.truck||'—')} · ${esc(d.home||'No home base')}</div></div>${badge(d.status)}</div>`).join(''):'<div class="empty">Add your first driver.</div>';
 }
-function updateDashboardOperations(){const transit=loads.filter(x=>['In Transit','Loaded','At Pickup','At Delivery','Dispatched'].includes(x.status)).length;const delivered=loads.filter(x=>x.status==='Delivered').length;const t=document.getElementById('dashTransit'),d=document.getElementById('dashDelivered');if(t)t.textContent=transit;if(d)d.textContent=delivered;const table=document.getElementById('dashboardLoadsTable');if(!table)return;const current=[...loads].sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0)).slice(0,10);table.innerHTML=current.length?current.map(l=>{const driver=drivers.find(d=>d._id===l.driverId);const miles=num(l.loadedMiles)+num(l.dhMiles);const rpm=miles?(num(l.rate)/miles).toFixed(2):'—';return `<tr style="cursor:pointer" onclick="editLoad('${esc(l._id)}')"><td><b>${esc(l.id)}</b></td><td>${esc(driver?.name||'—')}</td><td>${esc(l.puCity||'—')}, ${esc(l.puState||'')} → ${esc(l.delCity||'—')}, ${esc(l.delState||'')}</td><td>${badge(l.status)}</td><td>${money(l.rate)}</td><td>${rpm==='—'?'—':'const seed=new Date().toISOString().slice(0,10).split('').reduce((a,c)=>a+c.charCodeAt(0),0);const arr=[...allPhrases].sort((a,b)=>((a.id.length*17+seed)%97)-((b.id.length*17+seed)%97)).slice(0,5);$('todayFive').innerHTML=arr.map(p=>`<div class="quick-item"><div><b style="font-size:13px">${esc(p.en)}</b><div class="muted" style="font-size:12px">${esc(p.sr)}</div></div></div>`).join('')}
+function updateDashboardOperations(){
+ const transit=loads.filter(x=>['In Transit','Loaded','At Pickup','At Delivery','Dispatched'].includes(x.status)).length;
+ const delivered=loads.filter(x=>x.status==='Delivered').length;
+ const t=document.getElementById('dashTransit'),d=document.getElementById('dashDelivered');
+ if(t)t.textContent=transit;if(d)d.textContent=delivered;
+ const table=document.getElementById('dashboardLoadsTable');if(!table)return;
+ const current=[...loads].sort((a,b)=>(b.updated||b.created||0)-(a.updated||a.created||0)).slice(0,10);
+ table.innerHTML=current.length?current.map(l=>{
+  const driver=drivers.find(d=>d._id===l.driverId);
+  const miles=num(l.loadedMiles)+num(l.dhMiles),rpm=miles?'$'+(num(l.rate)/miles).toFixed(2):'—';
+  return `<tr style="cursor:pointer" onclick="editLoad('${esc(l._id)}')"><td><b>${esc(l.id)}</b></td><td>${esc(driver?.name||'—')}</td><td>${esc(l.puCity||'—')}, ${esc(l.puState||'')} → ${esc(l.delCity||'—')}, ${esc(l.delState||'')}</td><td>${badge(l.status)}</td><td>${money(l.rate)}</td><td>${rpm}</td></tr>`;
+ }).join(''):'<tr><td colspan="6" class="empty">No loads yet. Add your first load.</td></tr>';
+}
+function todayFive(){const target=document.getElementById('todayFive');if(!target)return;const arr=allPhrases.slice(0,5);target.innerHTML=arr.map(p=>`<div class="quick-item"><div><b>${esc(p.en)}</b><div class="muted">${esc(p.sr)}</div></div></div>`).join('')}
 
 function renderDrivers(){const b=$('driversBody');b.innerHTML=drivers.length?drivers.map(d=>`<tr><td><b>${esc(d.name)}</b></td><td>${badge(d.status)}</td><td>${esc(d.truck)}</td><td>${esc(d.trailer)}</td><td>${esc(d.equipment)}</td><td>${esc(d.home)}</td><td>${esc(d.prefs)}</td><td>${esc(d.phone)}</td><td><button class="btn small" onclick="editDriver('${d._id}')">Edit</button> <button class="btn small danger" onclick="deleteDriver('${d._id}')">Delete</button></td></tr>`).join(''):'<tr><td colspan="9" class="empty">No drivers yet.</td></tr>';updateDashboard()}
 function driverFormHTML(d={}){return `
