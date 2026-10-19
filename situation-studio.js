@@ -33,7 +33,7 @@ function lookupTerm(query){
  return ranked[0]?.score>=25?ranked[0].x:null;
 }
 function showUnknownDefinition(q){const box=document.createElement("div");box.className="ss-assistant ss-knowledge";box.innerHTML='<div class="ss-reply-head"><span class="ss-mark sm">✳</span><b>Trucking Knowledge</b></div><div class="ss-summary"><p>Ne mogu pouzdano da pronađem objašnjenje tog pojma u trenutnoj bazi. Probaj konkretnu reč ili skraćenicu na engleskom (npr. Dedicated, Shipper, FCFS, ELD). Ne želim da ti dam izmišljeno značenje.</p></div>';feed.append(box);box.scrollIntoView({block:"nearest",behavior:"smooth"})}
-function isTermQuestion(q){return /^(sta|sto|what|whats|what's|meaning|znacenje|objasni|explain|define)\\b/.test(norm(q).trim())}
+function isTermQuestion(q){return /^(sta|sto|what|whats|what's|meaning|znacenje|objasni|explain|define)\b/.test(norm(q).trim())}
 function showDefinition(term){
  const details={
  dedicated:"Dedicated znači da je kapacitet ili kamion angažovan za određenog klijenta, posao ili rutu. Često podrazumeva redovan raspored ili ugovoreni odnos; detalji zavise od dogovora.",
