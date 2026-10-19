@@ -84,8 +84,8 @@ const EXTRA_JS=`<script>(function(){
    document.querySelector('.sidebar .nav-btn[data-page="'+id+'"]')?.remove();
    const page=document.getElementById(id);
    if(!page||page.querySelector('.learning-back'))return;
-   const bar=document.createElement('div');
-   bar.className='learning-back';
+   const bar=document.createElement('nav');
+   bar.className='learning-back';bar.setAttribute('aria-label','Learning navigation');
    const back=document.createElement('button');
    back.type='button';back.className='learning-back-btn';
    back.innerHTML='<span aria-hidden="true">←</span> Back to Learning Center';
