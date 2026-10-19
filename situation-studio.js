@@ -18,8 +18,36 @@ shell.innerHTML='<div class="ss-header"><div class="ss-breadcrumb">LEARNING / SI
 const feed=shell.querySelector("#ssFeed"),input=shell.querySelector("#ssInput");
 const composer=shell.querySelector(".ss-composer");shell.querySelector(".ss-workspace").insertBefore(composer,feed);
 const similarity=(q,body)=>{const tokens=words(q),hay=words(body),set=new Set(hay);let score=0;for(const t of tokens){if(set.has(t))score+=4;else if(t.length>4&&hay.some(w=>w.startsWith(t)||t.startsWith(w)&&w.length>=4))score+=2}return score};
-function classify(q){const ranked=CASES.map(c=>({c,s:similarity(q,c.name+" "+c.keys)})).sort((a,b)=>b.s-a.s);return ranked[0]?.s>0?ranked[0].c:null}
-function supporting(q){return PHRASES.map(x=>({x,s:similarity(q,x[1]+" "+x[2])})).sort((a,b)=>b.s-a.s).filter(z=>z.s>2).slice(0,2).map(x=>x.x)}
+
+const INTENT_RULES=[
+ ["cancel",/\b(otkaz|otka|cancel|fall[\s-]?off|can't\s+cover|cannot\s+cover|ne\s+mozemo\s+da\s+vozimo|necu\s+voziti|odustan|bolj[ae]\s+tur[ae])/,/\b(bukir|book|load|tur|broker|rate\s*con|preuzet|committed)/],
+ ["overslept",/\b(uspav|zasp|overslept|slept\s+in)/],
+ ["noanswer",/\b(ne\s+javlja|ne\s+odgovara|unreachable|not\s+answer|can't\s+reach|tracking\s+driver\s+missing)/],
+ ["breakdown",/\b(kvar|pokvario|mechanical|broken|breakdown|flat\s+tire|repair|tire\s+blowout)/],
+ ["hos",/\b(hos|eld|reset|sleeper|legal\s+hours|drive\s+time|driving\s+hours|pauz|odmor)/],
+ ["detention",/\b(detention|cek|waiting|sat[ai]?\s+na\s+(?:utovaru|istovaru)|dock|layover)/],
+ ["tracking",/\b(tracking|macropoint|trucker\s+tools|gps|location\s+app)/],
+ ["rejected",/\b(odbija|refus|reject|shortage|damag|ostec|manjak\s+robe)/],
+ ["tonu",/\b(tonu|shipper\s+cancel|shipper\s+otkaz)/],
+ ["pickup",/\b(pickup|shipper|utovar|pick\s+up\s+number|appointment|zakazan\s+termin)/],
+ ["rate",/\b(pregovar|negotiat|rate|cen[au]|offer|nudi|[$]\s*[0-9]|payment|invoice)/],
+ ["overslept",/\b(kasn|zakasn|late|behind|delay|ljut|angry|freightguard|fg\s+report)/]
+];
+function classify(q){
+ const normalized=norm(q).replace(/[.,!?]/g," ");
+ const matched=INTENT_RULES.find(rule=>rule[1].test(normalized)&&(!rule[2]||rule[2].test(normalized)));
+ if(matched)return CASES.find(c=>c.id===matched[0])||null;
+ const ignored=new Set("broker driver vozac kamion load tura trucking problem treba mogu hocu sam imam mi se je da zbog and the with for ask".split(" "));
+ const words=normalized.split(/[^a-z0-9]+/).filter(x=>x.length>3&&!ignored.has(x));
+ if(!words.length)return null;
+ const scored=CASES.map(c=>({c,score:words.reduce((n,w)=>n+((c.keys+" "+c.name).toLowerCase().split(/[^a-z0-9]+/).some(z=>z===w||w.length>=6&&z.startsWith(w))?1:0),0)})).sort((a,b)=>b.score-a.score);
+ return scored[0]?.score>=2&&scored[0].score>scored[1]?.score?scored[0].c:null;
+}
+function supporting(q,c){
+ if(!c)return [];
+ const keywords={cancel:["cancel","tonu"],overslept:["late","traffic"],detention:["detention"],pickup:["pickup"],breakdown:["breakdown"],hos:["hos"],rate:["negotiation"],tracking:["tracking"],noanswer:["truck"],rejected:["delivery"],tonu:["tonu"]}[c.id]||[];
+ return PHRASES.filter(x=>keywords.some(w=>String(x[0]+" "+x[1]+" "+x[2]).toLowerCase().includes(w))).slice(0,1);
+}
 function question(c,q){if(!c)return "Šta je najvažnije da broker zna — trenutni ETA, razlog kašnjenja ili kakav odgovor želiš?";
 if(/eta|time|vreme|koliko|kasn|late|delivery|pickup/i.test(q)&&!/\b\d{1,2}:\d{2}\b/.test(q))return "Imaš li potvrđen ETA? Ako nemaš, možeš poslati prvi update bez izmišljanja vremena.";
 return c.facts[0]||"Šta je trenutno potvrđeno?"}
@@ -50,19 +78,38 @@ function showDefinition(term){
 }
 function renderUser(q){const el=document.createElement("div");el.className="ss-user";el.innerHTML='<div class="ss-bubble">'+safe(q)+'</div>';feed.append(el)}
 function copyBtn(value){const b=document.createElement("button");b.className="ss-copy";b.textContent="Copy";b.type="button";b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(value)}catch{const area=document.createElement("textarea");area.value=value;document.body.append(area);area.select();document.execCommand("copy");area.remove()}b.textContent="Copied ✓";setTimeout(()=>b.textContent="Copy",1400)});return b}
-function optionList(c,q){const options=[];
-if(c&&selected==="Broker"){for(const p of c.templates){options.push({name:p[0],en:p[1],sr:p[2],weight:10})}}
-const match=supporting(q);for(const m of match){for(const p of m[4]){if(p[0]===selected)options.push({name:p[1],en:p[2],sr:p[3],weight:5})}}
-const seen=new Set;const clean=options.filter(p=>{if(seen.has(p.en))return false;seen.add(p.en);return true});if(style==="Short")clean.sort((a,b)=>a.en.length-b.en.length);else if(style==="Professional")clean.sort((a,b)=>Number(/professional|written|follow-up|firm/i.test(b.name))-Number(/professional|written|follow-up|firm/i.test(a.name)));return clean.slice(0,7)}
-function reply(q,follow=false){const c=classify(q)||current;current=c;const isBroker=selected==="Broker";
+function optionList(c,q){
+ if(!c)return [];
+ const choices=[];
+ if(selected==="Broker")for(const p of c.templates)choices.push({name:p[0],en:p[1],sr:p[2]});
+ if(selected==="Driver"){
+  const driverReplies={
+   cancel:[["Call driver","Please confirm whether you're available to fulfill the load we already booked. I need to know before I call the broker.","Potvrdi da li možeš da ispoštuješ već bukirani load."],["Confirm status","Before we make any changes, please tell me your current location and availability.","Pre izmene plana pošalji lokaciju i dostupnost."]],
+   overslept:[["Confirm ETA","I need your current location and a realistic ETA right now. The broker is waiting for an update.","Treba mi lokacija i realan ETA što pre."],["Keep me posted","Please let me know immediately if your ETA changes again.","Javi odmah ako se ETA ponovo promeni."]],
+   breakdown:[["Safety check","Are you parked safely? What's the exact issue, and do you have a repair estimate?","Da li si bezbedno parkiran? Koji je kvar i procena?"]],
+   hos:[["Legal hours","Please confirm your remaining legal driving hours and your planned rest stop.","Potvrdi preostale legalne sate i planirani odmor."]],
+   detention:[["Check-in time","What time did you check in? Please send a photo of any timestamps or paperwork.","Kada si se prijavio? Pošalji potvrdu o vremenu."]],
+   pickup:[["Pickup status","Are you checked in? Please send the pickup reference and exact location.","Da li si check-in? Pošalji referencu i lokaciju."]],
+   noanswer:[["Call back","Please call me as soon as you're safely stopped. I need a confirmed status for the broker.","Pozovi me kad bezbedno staneš, potreban je status."]],
+   tracking:[["Reconnect tracking","Please check the tracking invitation and location permissions, then confirm when you're connected.","Proveri tracking pozivnicu i location permissions."]]
+  };
+  for(const p of (driverReplies[c.id]||[["Status check","Please send your confirmed status, current location, and realistic ETA when you're safely stopped.","Pošalji status, lokaciju i realan ETA kada bezbedno staneš."]]))choices.push({name:p[0],en:p[1],sr:p[2]});
+ }
+ const seen=new Set();
+ const unique=choices.filter(p=>{if(seen.has(p.en))return false;seen.add(p.en);return true});
+ if(style==="Short")unique.sort((a,b)=>a.en.length-b.en.length);
+ if(style==="Professional")unique.sort((a,b)=>Number(/written|professional|follow-up|request|recovery/i.test(b.name))-Number(/written|professional|follow-up|request|recovery/i.test(a.name)));
+ return unique.slice(0,8);
+}
+function reply(q,follow=false){const c=classify(q)||(/^(shorter|make it|broker is angry|written follow|give me)/i.test(q)?current:null);if(c)current=c;const isBroker=selected==="Broker";
 const wrap=document.createElement("div");wrap.className="ss-assistant";
 const head=document.createElement("div");head.className="ss-reply-head";head.innerHTML='<span class="ss-mark sm">✳</span><b>Situation Assistant</b><span class="ss-tag">'+safe(c?.name||"General guidance")+'</span>';wrap.append(head);
 const summary=document.createElement("div");summary.className="ss-summary";
-summary.innerHTML=c?'<p><b>My approach:</b> '+safe(c.plan[0])+' '+safe(c.plan[1])+'</p>':'<p>Razumem situaciju. Evo nekoliko neutralnih i praktičnih poruka koje možeš prilagoditi.</p>';wrap.append(summary);
+summary.innerHTML=c?'<p><b>My approach:</b> '+safe(c.plan[0])+' '+safe(c.plan[1])+'</p>':'<p>Razumem situaciju. Nisam siguran koja je tačna situacija. Napiši da li želiš da otkažeš load, javiš kašnjenje, tražiš detention ili pregovaraš cenu, pa ću ponuditi odgovor samo za taj slučaj.</p>';wrap.append(summary);
 const intro=document.createElement("div");intro.className="ss-option-heading";intro.innerHTML='<b>Messages you can use</b><span>'+safe(selected)+' · '+safe(style)+' tone</span>';wrap.append(intro);
 const opts=optionList(c,q);
 if(!opts.length){const fallback=document.createElement("p");fallback.className="ss-quiet";fallback.textContent="Treba mi još malo konteksta da ponudim relevantne poruke. Napiši ko kasni, šta se desilo i šta želiš od druge strane.";wrap.append(fallback)}
-else{const list=document.createElement("div");list.className="ss-options";for(let k=0;k<opts.length;k++){const o=opts[k];const card=document.createElement("article");card.className="ss-option";const top=document.createElement("div");top.className="ss-option-top";top.innerHTML='<span>'+safe(k===0?"Recommended":o.name)+'</span>';top.append(copyBtn(o.en));const text=document.createElement("p");text.className="ss-english";text.textContent=o.en;const translation=document.createElement("p");translation.className="ss-translation";translation.textContent=o.sr;card.append(top,text,translation);list.append(card)}wrap.append(list)}
+else{const list=document.createElement("div");list.className="ss-options";for(let k=0;k<opts.length;k++){const o=opts[k];const card=document.createElement("article");card.className="ss-option";const top=document.createElement("div");top.className="ss-option-top";top.innerHTML='<span>'+safe(o.name)+'</span>';top.append(copyBtn(o.en));const text=document.createElement("p");text.className="ss-english";text.textContent=o.en;const translation=document.createElement("p");translation.className="ss-translation";translation.textContent=o.sr;card.append(top,text,translation);list.append(card)}wrap.append(list)}
 const bottom=document.createElement("div");bottom.className="ss-followup";bottom.innerHTML='<p><b>Worth checking:</b> '+safe(question(c,q))+'</p><div class="ss-followup-actions"><button type="button" data-refine="Give me a shorter version for the '+selected.toLowerCase()+'.">Make it shorter</button><button type="button" data-refine="The '+selected.toLowerCase()+' is angry. Give me a calmer but firm version.">Broker is angry</button><button type="button" data-refine="Write a concise follow-up message after our phone call.">Written follow-up</button></div>';wrap.append(bottom);
 feed.append(wrap);bottom.querySelectorAll("[data-refine]").forEach(b=>b.addEventListener("click",()=>{const t=b.dataset.refine;input.value=t;submit(t)}));
 const limit=feed.scrollHeight;feed.scrollTo({top:limit,behavior:"smooth"});wrap.scrollIntoView({behavior:"smooth",block:"nearest"})}
