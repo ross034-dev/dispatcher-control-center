@@ -24,9 +24,9 @@ return c.facts[0]||"Šta je trenutno potvrđeno?"}
 function renderUser(q){const el=document.createElement("div");el.className="ss-user";el.innerHTML='<div class="ss-bubble">'+safe(q)+'</div>';feed.append(el)}
 function copyBtn(value){const b=document.createElement("button");b.className="ss-copy";b.textContent="Copy";b.type="button";b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(value)}catch{const area=document.createElement("textarea");area.value=value;document.body.append(area);area.select();document.execCommand("copy");area.remove()}b.textContent="Copied ✓";setTimeout(()=>b.textContent="Copy",1400)});return b}
 function optionList(c,q){const options=[];
-if(c){for(const p of c.templates){options.push({name:p[0],en:p[1],sr:p[2],weight:10})}}
+if(c&&selected==="Broker"){for(const p of c.templates){options.push({name:p[0],en:p[1],sr:p[2],weight:10})}}
 const match=supporting(q);for(const m of match){for(const p of m[4]){if(p[0]===selected)options.push({name:p[1],en:p[2],sr:p[3],weight:5})}}
-const seen=new Set;return options.filter(p=>{if(seen.has(p.en))return false;seen.add(p.en);return true}).slice(0,7)}
+const seen=new Set;const clean=options.filter(p=>{if(seen.has(p.en))return false;seen.add(p.en);return true});if(style==="Short")clean.sort((a,b)=>a.en.length-b.en.length);else if(style==="Professional")clean.sort((a,b)=>Number(/professional|written|follow-up|firm/i.test(b.name))-Number(/professional|written|follow-up|firm/i.test(a.name)));return clean.slice(0,7)}
 function reply(q,follow=false){const c=classify(q)||current;current=c;const isBroker=selected==="Broker";
 const wrap=document.createElement("div");wrap.className="ss-assistant";
 const head=document.createElement("div");head.className="ss-reply-head";head.innerHTML='<span class="ss-mark sm">✳</span><b>Situation Assistant</b><span class="ss-tag">'+safe(c?.name||"General guidance")+'</span>';wrap.append(head);
