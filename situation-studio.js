@@ -26,8 +26,8 @@ return c.facts[0]||"Šta je trenutno potvrđeno?"}
 
 function lookupTerm(query){
  const q=norm(query).trim().replace(/[?!.,]+$/g,"");
- const isQuestion=/^(sta|sto|what|whats|what's|meaning|znacenje|objasni|explain|define)\\b/.test(q);
- const clean=q.replace(/^(sta je|sto je|sta znaci|sta predstavlja|what is|what does|whats|what's|meaning of|objasni mi|objasni|explain|define|znacenje)\\s+/,"").trim();
+ const isQuestion=/^(sta|sto|what|whats|what's|meaning|znacenje|objasni|explain|define)\b/.test(q);
+ const clean=q.replace(/^(sta je|sto je|sta znaci|sta predstavlja|what is|what does|whats|what's|meaning of|objasni mi|objasni|explain|define|znacenje)\s+/,"").trim();
  if(!isQuestion&&!/^(dedicated|reefer|flatbed|dry van|deadhead|rpm|tonu|detention|layover|hos|eld|bol|pod|hazmat|lumper|fcfs)$/.test(clean))return null;
  const ranked=GLOSSARY.map(x=>{const key=norm(x.term);let score=0;if(key===clean)score=100;else if(clean.startsWith(key+" ")||clean.endsWith(" "+key))score=75;else if(key.length>3&&clean.includes(key))score=50;else if(clean.length>3&&key.startsWith(clean))score=25;return {x,score}}).sort((a,b)=>b.score-a.score);
  return ranked[0]?.score>=25?ranked[0].x:null;
