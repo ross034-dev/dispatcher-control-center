@@ -1,7 +1,13 @@
-const CACHE='dispatcher-cc-v18';
+const CACHE='dispatcher-cc-v19';
 const ASSETS=['./manifest.webmanifest','./icon.svg'];
 
 const EXTRA_CSS=`
+
+.learning-back{margin:0 0 18px;display:flex;align-items:center}
+.learning-back-btn{border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:11px;min-height:42px;padding:9px 15px;font-size:12px;font-weight:750;cursor:pointer;display:flex;align-items:center;gap:9px}
+.learning-back-btn:hover{border-color:var(--accent);color:var(--accent)}
+@media(max-width:650px){.learning-back{margin-bottom:14px}.learning-back-btn{min-height:44px}}
+
 .mobile-bottom-nav{display:none}
 .learn-nav-btn{align-items:flex-start!important;padding:10px 11px!important;gap:10px!important;margin:3px 0}
 .learn-nav-btn .learn-nav-icon{width:31px;height:31px;border-radius:9px;background:#142238;display:grid;place-items:center;flex:0 0 31px;font-size:15px;color:#dce8f7}
@@ -71,6 +77,35 @@ const EXTRA_JS=`<script>(function(){
  const labels={phrases:['💬','Phrasebook','Broker & driver phrases'],flashcards:['🧠','Flashcards','Practice & review'],situations:['⚡','Situation Assistant','Real-world problems'],terminology:['📚','Terminology','Terms & abbreviations']};
  Object.entries(labels).forEach(([id,v])=>{const b=document.querySelector('.nav-btn[data-page="'+id+'"]');if(b){b.classList.add('learn-nav-btn');b.innerHTML='<span class="learn-nav-icon">'+v[0]+'</span><span class="learn-nav-copy"><span class="learn-nav-title">'+v[1]+'</span><span class="learn-nav-sub">'+v[2]+'</span></span>';}});
  const learnSection=[...document.querySelectorAll('.nav-section')].find(x=>x.textContent.trim().toLowerCase()==='learn');if(learnSection&&!document.querySelector('[data-page="learnhub"]')){const b=document.createElement('button');b.className='nav-btn learn-nav-btn';b.dataset.page='learnhub';b.innerHTML='<span class="learn-nav-icon">✦</span><span class="learn-nav-copy"><span class="learn-nav-title">Learning Center</span><span class="learn-nav-sub">Start here</span></span>';learnSection.insertAdjacentElement('afterend',b);b.addEventListener('click',()=>{if(typeof go==='function')go('learnhub')});}
+
+ // Keep the sidebar clean: the learning hub is the only learning entry.
+ const learningPages=['phrases','flashcards','situations','terminology'];
+ learningPages.forEach(id=>{
+   document.querySelector('.sidebar .nav-btn[data-page="'+id+'"]')?.remove();
+   const page=document.getElementById(id);
+   if(!page||page.querySelector('.learning-back'))return;
+   const bar=document.createElement('div');
+   bar.className='learning-back';
+   const back=document.createElement('button');
+   back.type='button';back.className='learning-back-btn';
+   back.innerHTML='<span aria-hidden="true">←</span> Back to Learning Center';
+   back.addEventListener('click',()=>{if(typeof go==='function')go('learnhub')});
+   bar.appendChild(back);page.prepend(bar);
+ });
+ const hub=document.getElementById('learnhub');
+ if(hub){
+   hub.querySelectorAll('.learn-stat').forEach(x=>{
+     if(x.textContent.trim()==='Flashcards')x.textContent='English Trainer';
+   });
+   hub.querySelectorAll('.learn-module').forEach(x=>{
+     if(x.getAttribute('onclick')?.includes("flashcards")){
+       const title=x.querySelector('h3'),desc=x.querySelector('p');
+       if(title)title.textContent='English Trainer';
+       if(desc)desc.textContent='Writing exercises, quizzes, real broker and driver conversations.';
+       const meta=x.querySelector('.learn-meta');if(meta)meta.innerHTML='<span>Writing</span><span>Quiz</span><span>Practice</span>';
+     }
+   });
+ }
 })();<\/script>`;
 
 function enhance(html){
