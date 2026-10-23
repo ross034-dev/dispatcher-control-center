@@ -24,3 +24,14 @@
 #dnStickyDock{position:fixed;z-index:10045;left:auto;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;max-width:min(70vw,630px);justify-content:flex-end;gap:6px;pointer-events:none}
 .dn-dock-item{max-width:150px;padding:9px 12px;border:1px solid #d8ba67;border-radius:999px;box-shadow:0 5px 17px #0002;background:#ffe7a3;color:#392f19;font-size:11px;font-weight:750;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;cursor:pointer;pointer-events:auto}
 @media(max-width:760px){.dn-sticky-card{width:min(325px,calc(100vw - 16px));height:min(350px,calc(100dvh - 130px))}#dnStickyDock{bottom:calc(75px + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 24px)}.dn-card-bar{touch-action:none}.dn-card-text,.dn-card-title{font-size:16px}}
+
+
+/* V26 Quick Copy controls */
+.dn-copy-tools{display:flex;align-items:center;flex-wrap:wrap;gap:7px;border-top:1px solid var(--line);padding-top:13px;margin-top:13px}
+.dn-copy-tools .dn-copy-label{width:100%;font-size:10px;letter-spacing:.09em;font-weight:800;color:var(--muted)}
+.dn-copy-tools .btn{min-height:36px;padding:8px 11px;font-size:11px}
+.dn-copy-tools .btn:focus-visible,.dn-card-copy button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.dn-card-copy{display:flex;gap:5px;justify-content:space-between;padding:5px 0 10px;flex-wrap:wrap}
+.dn-card-copy button{flex:1;border:1px solid #dac587;border-radius:8px;padding:7px 3px;background:#fff9e8;color:#695321;font-size:11px;font-weight:750;cursor:pointer;min-height:34px}
+.dn-card-copy button:hover{background:#fff}
+@media(max-width:760px){.dn-copy-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.dn-copy-tools .dn-copy-label{grid-column:1/-1}.dn-copy-tools .btn{min-height:44px;padding:8px 4px}.dn-card-copy button{min-height:38px;font-size:10px}}
