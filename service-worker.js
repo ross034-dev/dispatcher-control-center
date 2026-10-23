@@ -1,4 +1,4 @@
-const CACHE='dispatcher-cc-v23';
+const CACHE='dispatcher-cc-v24';
 const ASSETS=['./manifest.webmanifest','./icon.svg'];
 
 const EXTRA_CSS=`
