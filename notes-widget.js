@@ -6,7 +6,13 @@ const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"
 const load=(k,def)=>{try{const v=JSON.parse(localStorage.getItem(k));return v??def}catch{return def}};
 let notes=load(KEY,[]);if(!Array.isArray(notes))notes=[];
 notes=notes.filter(n=>n&&typeof n.id==="string").slice(0,MAX);
-let ui={visible:false,minimized:false,pinnedId:null,...load(UIKEY,{})};
+let ui=load(UIKEY,{});
+if(!ui||typeof ui!=="object")ui={};
+if(!ui.pins||typeof ui.pins!=="object"||Array.isArray(ui.pins))ui.pins={};
+if(ui.pinnedId&&notes.some(n=>n.id===ui.pinnedId)&&!ui.pins[ui.pinnedId]){
+ ui.pins[ui.pinnedId]={visible:ui.visible!==false,minimized:!!ui.minimized};
+}
+delete ui.pinnedId;delete ui.visible;delete ui.minimized;
 let current=notes[0]?.id||null;
 let saveTimer;
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(notes));localStorage.setItem(UIKEY,JSON.stringify(ui))}catch{status("Storage is full. Export a backup to keep your notes.")}};
@@ -19,38 +25,101 @@ const nav=document.createElement("button");nav.type="button";nav.className="nav-
 const docsNav=document.querySelector('.sidebar .nav-btn[data-page="documents"]');
 if(docsNav)docsNav.insertAdjacentElement("afterend",nav);else document.querySelector(".sidebar")?.append(nav);
 nav.addEventListener("click",()=>{if(typeof go==="function")go("notes");});
-const sticky=document.createElement("div");sticky.id="dccSticky";sticky.setAttribute("aria-label","Sticky note");sticky.innerHTML='<div class="dcc-sticky-bar" id="dnDrag"><div class="dcc-sticky-label"><span>●</span> STICKY NOTE</div><div class="dcc-sticky-actions"><button type="button" id="dnMin" title="Minimize" aria-label="Minimize">−</button><button type="button" id="dnClose" title="Close sticky note" aria-label="Close">×</button></div></div><div id="dnStickyBody"><input id="dnStickyTitle" maxlength="120" aria-label="Sticky note title"><textarea id="dnStickyText" maxlength="35000" spellcheck="true" aria-label="Sticky note text"></textarea><div class="dcc-sticky-foot"><span id="dnStickySave">Autosaved</span><button id="dnOpenNotes">Open in Notes ↗</button></div></div>';
-document.body.append(sticky);
-const bubble=document.createElement("button");bubble.id="dnRestore";bubble.type="button";bubble.innerHTML='📌 <span>Notes</span>';bubble.title="Open sticky note";document.body.append(bubble);
+
 const $=id=>document.getElementById(id);
-const title=$("dnTitle"),text=$("dnText"),stickyTitle=$("dnStickyTitle"),stickyText=$("dnStickyText");
-function status(message){$("dnSave").textContent=message;$("dnStickySave").textContent=message}
+const title=$("dnTitle"),text=$("dnText");
+const dock=document.createElement("div");dock.id="dnStickyDock";dock.setAttribute("aria-label","Pinned notes");document.body.append(dock);
+const widgets=document.createElement("div");widgets.id="dnStickyWidgets";document.body.append(widgets);
+let topZ=10300;
+function status(message){$("dnSave").textContent=message}
 function saveNow(){clearTimeout(saveTimer);persist();status("Saved on this device")}
-function scheduleSave(){status("Saving...");clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,350)}
-function renderList(){const q=$("dnSearch").value.trim().toLowerCase();const list=notes.filter(n=>(n.title+" "+n.text).toLowerCase().includes(q)).sort((a,b)=>b.updated-a.updated);
-$("dnCount").textContent=notes.length+" / "+MAX;
-$("dnItems").innerHTML=list.length?list.map(n=>'<button type="button" class="dcc-note-row'+(n.id===current?" active":"")+'" data-note="'+safe(n.id)+'"><span class="dcc-note-row-top"><strong>'+safe(n.title||"Untitled note")+'</strong>'+(ui.pinnedId===n.id?'<span title="Sticky">📌</span>':"")+'</span><span class="dcc-note-snippet">'+safe((n.text||"").replace(/\s+/g," ").slice(0,95)||"Empty note")+'</span><span class="dcc-note-time">'+safe(time(n.updated))+'</span></button>').join(""):'<p class="dcc-notes-empty">No notes found.</p>';
-$("dnItems").querySelectorAll("[data-note]").forEach(b=>b.onclick=()=>{current=b.dataset.note;renderEditor();renderList()});
+function scheduleSave(){status("Saving...");clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,300)}
+function pinned(id){return Object.prototype.hasOwnProperty.call(ui.pins,id)}
+function pinCount(){return Object.keys(ui.pins).length}
+function formatTitle(n){return n.title?.trim()||"Untitled note"}
+function renderList(){
+ const q=$("dnSearch").value.trim().toLowerCase();
+ const list=notes.filter(n=>(n.title+" "+n.text).toLowerCase().includes(q)).sort((a,b)=>b.updated-a.updated);
+ $("dnCount").textContent=notes.length+" / "+MAX;
+ $("dnItems").innerHTML=list.length?list.map(n=>'<button type="button" class="dcc-note-row'+(n.id===current?" active":"")+'" data-note="'+safe(n.id)+'"><span class="dcc-note-row-top"><strong>'+safe(formatTitle(n))+'</strong>'+(pinned(n.id)?'<span title="Pinned note">📌</span>':"")+'</span><span class="dcc-note-snippet">'+safe((n.text||"").replace(/\s+/g," ").slice(0,95)||"Empty note")+'</span><span class="dcc-note-time">'+safe(time(n.updated))+'</span></button>').join(""):'<p class="dcc-notes-empty">No notes found.</p>';
+ $("dnItems").querySelectorAll("[data-note]").forEach(b=>b.onclick=()=>{current=b.dataset.note;renderEditor();renderList()});
 }
 function renderEditor(){
  const n=byId(current),enabled=!!n;
  for(const field of [title,text,$("dnPin"),$("dnDelete")])field.disabled=!enabled;
- title.value=n?.title||"";text.value=n?.text||"";
+ if(document.activeElement!==title)title.value=n?.title||"";
+ if(document.activeElement!==text)text.value=n?.text||"";
  $("dnUpdated").textContent=n?"Updated "+time(n.updated):"Create a note to get started";
  $("dnWords").textContent=n?(n.text.trim()?n.text.trim().split(/\s+/).length:0)+" words":"";
- $("dnPin").textContent=n&&ui.pinnedId===n.id?"📌 Sticky is on":"📌 Make sticky";
+ $("dnPin").textContent=n&&pinned(n.id)?"📌 Unpin sticky note":"📌 Make sticky";
+ $("dnPin").setAttribute("aria-pressed",String(!!n&&pinned(n.id)));
  $("dnPin").disabled=!n;
 }
-function renderSticky(){
- const n=byId(ui.pinnedId);
- if(!n){ui.visible=false;ui.minimized=false;}
- sticky.style.display=ui.visible&&n?"flex":"none";
- sticky.classList.toggle("minimized",!!ui.minimized);
- bubble.style.display=n&&!ui.visible?"flex":"none";
- if(n){if(document.activeElement!==stickyTitle)stickyTitle.value=n.title;if(document.activeElement!==stickyText)stickyText.value=n.text}
- $("dnMin").textContent=ui.minimized?"▢":"−";
- $("dnMin").title=ui.minimized?"Expand":"Minimize";
- persist();
+function renderDock(){
+ dock.replaceChildren();
+ const hidden=notes.filter(n=>pinned(n.id)&&!ui.pins[n.id].visible);
+ for(const n of hidden){
+  const b=document.createElement("button");b.type="button";b.className="dn-dock-item";b.textContent="📌 "+formatTitle(n);b.title="Restore "+formatTitle(n);
+  b.onclick=()=>{ui.pins[n.id].visible=true;ui.pins[n.id].minimized=false;renderStickies();saveNow()};dock.append(b);
+ }
+}
+function position(el,id,index){
+ const cfg=ui.pins[id];if(!cfg)return;
+ if(Number.isFinite(cfg.left)&&Number.isFinite(cfg.top)){
+   const w=el.offsetWidth||340,h=el.offsetHeight||320;
+   el.style.left=Math.max(4,Math.min(window.innerWidth-w-4,cfg.left))+"px";
+   el.style.top=Math.max(4,Math.min(window.innerHeight-h-4,cfg.top))+"px";
+   el.style.right="auto";el.style.bottom="auto";
+ }else{
+   const compact=window.innerWidth<760;
+   const offset=index*22;
+   const w=el.offsetWidth||340;
+   const x=compact?Math.max(6,window.innerWidth-w-9):Math.max(6,window.innerWidth-w-24-offset);
+   const y=compact?Math.max(6,window.innerHeight-390-offset):Math.max(6,window.innerHeight-388-offset);
+   el.style.left=x+"px";el.style.top=y+"px";el.style.right="auto";el.style.bottom="auto";
+ }
+}
+function createSticky(n,index){
+ const el=document.createElement("section");el.className="dn-sticky-card";
+ el.dataset.stickyId=n.id;el.setAttribute("aria-label","Sticky note: "+formatTitle(n));
+ el.innerHTML='<div class="dn-card-bar"><span class="dn-card-handle" aria-hidden="true">● STICKY NOTE</span><div class="dn-card-actions"><button type="button" data-act="min" title="Minimize" aria-label="Minimize">−</button><button type="button" data-act="close" title="Close; keep pinned" aria-label="Close">×</button></div></div><div class="dn-card-body"><input class="dn-card-title" maxlength="120" aria-label="Sticky note title"><textarea class="dn-card-text" maxlength="35000" spellcheck="true" aria-label="Sticky note text"></textarea><div class="dn-card-bottom"><span>Autosaved locally</span><div><button data-act="open" type="button">Open note ↗</button><button data-act="unpin" type="button" title="Remove sticky pin">Unpin</button></div></div></div>';
+ const cfg=ui.pins[n.id];el.classList.toggle("dn-minimized",!!cfg.minimized);
+ const input=el.querySelector(".dn-card-title"),area=el.querySelector(".dn-card-text");
+ input.value=n.title;area.value=n.text;
+ input.addEventListener("input",e=>update(n.id,"title",e.target.value));
+ area.addEventListener("input",e=>update(n.id,"text",e.target.value));
+ el.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>{
+  const action=b.dataset.act;
+  if(action==="min"){cfg.minimized=!cfg.minimized;renderStickies()}
+  if(action==="close"){cfg.visible=false;renderStickies()}
+  if(action==="unpin"){delete ui.pins[n.id];renderStickies();renderList();renderEditor()}
+  if(action==="open"){current=n.id;renderEditor();renderList();if(typeof go==="function")go("notes")}
+  saveNow();
+ });
+ el.addEventListener("pointerdown",()=>{el.style.zIndex=String(++topZ)});
+ widgets.append(el);position(el,n.id,index);
+ let drag=null;const bar=el.querySelector(".dn-card-bar");
+ bar.addEventListener("pointerdown",e=>{
+  if(e.target.closest("button")||e.button!==0)return;
+  const rect=el.getBoundingClientRect();drag={x:e.clientX,y:e.clientY,l:rect.left,t:rect.top};
+  el.style.zIndex=String(++topZ);bar.setPointerCapture(e.pointerId);e.preventDefault();
+ });
+ bar.addEventListener("pointermove",e=>{
+  if(!drag)return;
+  const width=el.getBoundingClientRect().width,height=el.getBoundingClientRect().height;
+  cfg.left=Math.round(Math.max(4,Math.min(window.innerWidth-width-4,drag.l+e.clientX-drag.x)));
+  cfg.top=Math.round(Math.max(4,Math.min(window.innerHeight-height-4,drag.t+e.clientY-drag.y)));
+  el.style.left=cfg.left+"px";el.style.top=cfg.top+"px";
+ });
+ const stop=()=>{if(drag){drag=null;saveNow()}};
+ bar.addEventListener("pointerup",stop);bar.addEventListener("pointercancel",stop);
+}
+function renderStickies(){
+ // Remove or migrate pins whose source note no longer exists.
+ for(const id of Object.keys(ui.pins))if(!byId(id))delete ui.pins[id];
+ widgets.replaceChildren();
+ notes.filter(n=>pinned(n.id)&&ui.pins[n.id].visible).forEach((n,i)=>createSticky(n,i));
+ renderDock();persist();
 }
 function update(id,field,value){
  const n=byId(id);if(!n)return;
@@ -61,33 +130,41 @@ function update(id,field,value){
   $("dnUpdated").textContent="Updated just now";
   $("dnWords").textContent=(n.text.trim()?n.text.trim().split(/\s+/).length:0)+" words";
  }
- if(ui.pinnedId===id){
-  if(field==="title"&&document.activeElement!==stickyTitle)stickyTitle.value=value;
-  if(field==="text"&&document.activeElement!==stickyText)stickyText.value=value;
+ const card=[...widgets.querySelectorAll(".dn-sticky-card")].find(x=>x.dataset.stickyId===id);
+ if(card){
+  const el=card.querySelector(field==="title"?".dn-card-title":".dn-card-text");
+  if(document.activeElement!==el)el.value=value;
+  if(field==="title")card.setAttribute("aria-label","Sticky note: "+formatTitle(n));
  }
  renderList();scheduleSave();
 }
-function create(){if(notes.length>=MAX){status("Maximum "+MAX+" notes reached. Export or delete old notes.");return}const n=make();notes.push(n);current=n.id;renderList();renderEditor();saveNow();title.focus()}
+function create(){
+ if(notes.length>=MAX){status("Maximum "+MAX+" notes reached. Export or delete old notes.");return}
+ const n=make();notes.push(n);current=n.id;renderList();renderEditor();saveNow();title.focus();
+}
 $("dnCreate").onclick=create;
-$("dnExport").onclick=()=>{const file=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),notes},null,2)],{type:"application/json"});const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download="dispatcher-notes-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),20000)};
+$("dnExport").onclick=()=>{
+ const file=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),notes},null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(file),a=document.createElement("a");a.href=url;a.download="dispatcher-notes-"+new Date().toISOString().slice(0,10)+".json";a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),20000)
+};
 $("dnSearch").addEventListener("input",renderList);
 title.addEventListener("input",e=>update(current,"title",e.target.value));
 text.addEventListener("input",e=>update(current,"text",e.target.value));
-$("dnPin").onclick=()=>{const n=byId(current);if(!n)return;if(ui.pinnedId===n.id&&ui.visible){ui.visible=false}else{ui.pinnedId=n.id;ui.visible=true;ui.minimized=false}renderSticky();renderEditor();renderList()};
-$("dnDelete").onclick=()=>{const n=byId(current);if(!n||!confirm("Delete '"+n.title+"'? This cannot be undone."))return;notes=notes.filter(x=>x.id!==n.id);if(ui.pinnedId===n.id){ui.pinnedId=null;ui.visible=false}current=notes[0]?.id||null;renderList();renderEditor();renderSticky();saveNow()};
-stickyTitle.addEventListener("input",e=>update(ui.pinnedId,"title",e.target.value));
-stickyText.addEventListener("input",e=>update(ui.pinnedId,"text",e.target.value));
-$("dnMin").onclick=()=>{ui.minimized=!ui.minimized;renderSticky()};
-$("dnClose").onclick=()=>{ui.visible=false;ui.minimized=false;renderSticky()};
-bubble.onclick=()=>{ui.visible=true;ui.minimized=false;renderSticky()};
-$("dnOpenNotes").onclick=()=>{current=ui.pinnedId;renderList();renderEditor();if(typeof go==="function")go("notes")};
+$("dnPin").onclick=()=>{
+ const n=byId(current);if(!n)return;
+ if(pinned(n.id)){delete ui.pins[n.id]}else{
+   ui.pins[n.id]={visible:true,minimized:false};
+ }
+ renderStickies();renderEditor();renderList();saveNow();
+};
+$("dnDelete").onclick=()=>{
+ const n=byId(current);
+ if(!n||!confirm("Delete '"+n.title+"'? This cannot be undone."))return;
+ notes=notes.filter(x=>x.id!==n.id);delete ui.pins[n.id];
+ current=notes[0]?.id||null;renderList();renderEditor();renderStickies();saveNow()
+};
 if(!notes.length)create();else{renderList();renderEditor();}
-renderSticky();
-// Allow repositioning on desktop without obstructing input on iPhone.
-let pointer=null;const bar=$("dnDrag");bar.addEventListener("pointerdown",e=>{
- if(e.target.closest("button")||e.pointerType==="touch")return;
- pointer={x:e.clientX,y:e.clientY,left:sticky.getBoundingClientRect().left,top:sticky.getBoundingClientRect().top};bar.setPointerCapture(e.pointerId);
-});
-bar.addEventListener("pointermove",e=>{if(!pointer)return;const rect=sticky.getBoundingClientRect(),left=Math.max(6,Math.min(window.innerWidth-rect.width-6,pointer.left+e.clientX-pointer.x)),top=Math.max(6,Math.min(window.innerHeight-rect.height-6,pointer.top+e.clientY-pointer.y));sticky.style.left=left+"px";sticky.style.top=top+"px";sticky.style.right="auto";sticky.style.bottom="auto"});
-bar.addEventListener("pointerup",()=>pointer=null);bar.addEventListener("pointercancel",()=>pointer=null);
+renderStickies();
+window.addEventListener("resize",()=>{for(const n of [...widgets.children]){const cfg=ui.pins[n.dataset.stickyId];if(cfg)position(n,n.dataset.stickyId,0)}});
 })();
