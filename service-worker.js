@@ -1,4 +1,4 @@
-const CACHE='dispatcher-cc-v24';
+const CACHE='dispatcher-cc-v25';
 const ASSETS=['./manifest.webmanifest','./icon.svg'];
 
 const EXTRA_CSS=`
@@ -36,9 +36,53 @@ const EXTRA_CSS=`
  body{padding-bottom:calc(78px + env(safe-area-inset-bottom))}.topbar{top:0;padding:calc(8px + env(safe-area-inset-top)) 12px 9px;gap:8px}.mobile-menu{display:none!important}.topbar .search{max-width:none;flex:1}.topbar .icon-btn{min-width:46px;min-height:46px;border-radius:14px;font-size:18px}.topbar .search input{min-height:46px;font-size:16px;border-radius:14px}.sidebar{padding-top:calc(24px + env(safe-area-inset-top));padding-bottom:calc(90px + env(safe-area-inset-bottom))}.content{padding-bottom:calc(108px + env(safe-area-inset-bottom))}
  .mobile-bottom-nav{position:fixed;left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:70;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:7px;background:rgba(255,255,255,.94);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border:1px solid var(--line);border-radius:22px;box-shadow:0 12px 35px rgba(15,23,42,.18)}[data-theme="dark"] .mobile-bottom-nav{background:rgba(15,26,44,.94)}.mobile-nav-btn{appearance:none;border:0;background:transparent;color:var(--muted);min-height:56px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;font-weight:700;padding:5px 2px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.mobile-nav-btn .micon{font-size:20px;line-height:1}.mobile-nav-btn.active{background:color-mix(in srgb,var(--accent) 12%,var(--surface));color:var(--accent)}.mobile-nav-btn:active{transform:scale(.96)}
  .learn-center-head{display:block}.learn-stats{margin-top:10px}.learn-module-grid,.delay-grid,.quick-tools,.call-flow{grid-template-columns:1fr}.learn-module{min-height:160px}.learn-module-grid{gap:9px}.learn-section-title{align-items:flex-end}.delay-card{padding:13px}
-}`;
+}
+/* V25: compact iPhone-native style navigation */
+@media(max-width:760px){
+ html{scroll-padding-bottom:100px}
+ body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+ .content{padding-bottom:calc(105px + env(safe-area-inset-bottom,0px))}
+ .mobile-bottom-nav{
+  position:fixed!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  left:max(12px,env(safe-area-inset-left,0px))!important;right:max(12px,env(safe-area-inset-right,0px))!important;
+  bottom:calc(8px + env(safe-area-inset-bottom,0px))!important;
+  z-index:900!important;gap:3px!important;padding:6px!important;
+  background:rgba(255,255,255,.94)!important;border:1px solid rgba(148,163,184,.24)!important;
+  box-shadow:0 7px 28px rgba(15,23,42,.12)!important;
+  border-radius:21px!important;-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);
+ }
+ [data-theme="dark"] .mobile-bottom-nav{background:rgba(15,23,42,.95)!important;border-color:rgba(148,163,184,.19)!important}
+ .mobile-bottom-nav .mobile-nav-btn{
+  min-width:0!important;min-height:54px!important;max-height:56px!important;
+  border-radius:15px!important;display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;gap:3px!important;
+  padding:6px 1px!important;color:var(--muted)!important;background:transparent!important;
+  font-size:10px!important;font-weight:650!important;line-height:1.1!important;letter-spacing:0!important;
+  white-space:nowrap!important;-webkit-tap-highlight-color:transparent;
+ }
+ .mobile-bottom-nav .mobile-nav-btn svg{display:block!important;width:21px!important;height:21px!important;flex:0 0 21px}
+ .mobile-bottom-nav .mobile-nav-btn span{font-size:10px!important;line-height:12px!important}
+ .mobile-bottom-nav .mobile-nav-btn.active{color:var(--accent)!important;background:color-mix(in srgb,var(--accent) 10%,var(--surface))!important}
+ .mobile-bottom-nav .mobile-nav-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+ .sidebar{z-index:920!important}
+ .topbar{z-index:60}
+ #dnStickyDock{bottom:calc(85px + env(safe-area-inset-bottom,0px))!important;z-index:850!important}
+ .dn-sticky-card{max-height:calc(100dvh - 160px)!important}
+ .dcc-notes-heading{gap:12px}
+ .dcc-notes-heading h1{font-size:25px}
+ .dcc-notes-buttons{width:100%}
+ .dcc-notes-buttons .btn{flex:1;justify-content:center}
+ .dcc-notes-list,.dcc-notes-editor{max-width:100%;min-width:0}
+ .dcc-notes-editor #dnText{min-height:240px;font-size:16px}
+ .dcc-notes-bottom .btn{min-height:44px}
+}
+@media(max-width:365px){
+ .mobile-bottom-nav{left:7px!important;right:7px!important;padding:4px!important}
+ .mobile-bottom-nav .mobile-nav-btn span{font-size:9px!important}
+}
+`;
 
-const MOBILE_NAV=`<nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile navigation"><button class="mobile-nav-btn active" data-mobile-page="dashboard"><span class="micon">⌂</span><span>Home</span></button><button class="mobile-nav-btn" data-mobile-page="drivers"><span class="micon">♙</span><span>Drivers</span></button><button class="mobile-nav-btn" data-mobile-page="loads"><span class="micon">▣</span><span>Loads</span></button><button class="mobile-nav-btn" data-mobile-page="learnhub"><span class="micon">Aa</span><span>Learn</span></button><button class="mobile-nav-btn" id="mobileMoreBtn"><span class="micon">•••</span><span>More</span></button></nav>`;
+const MOBILE_NAV=`<nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Main mobile navigation"><button type="button" class="mobile-nav-btn active" data-mobile-page="dashboard" aria-label="Home"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-7h6v7"/></svg><span>Home</span></button><button type="button" class="mobile-nav-btn" data-mobile-page="drivers" aria-label="Drivers"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7.5" r="3.5"/><path d="M4.8 20v-2.2c0-3.1 2.9-5.5 7.2-5.5s7.2 2.4 7.2 5.5V20"/></svg><span>Drivers</span></button><button type="button" class="mobile-nav-btn" data-mobile-page="loads" aria-label="Loads"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h7M7 17h4"/></svg><span>Loads</span></button><button type="button" class="mobile-nav-btn" data-mobile-page="learnhub" aria-label="Learning Center"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2.5 9 9.5-5 9.5 5-9.5 5-9.5-5Z"/><path d="M6.5 11.5v5c3.2 2.9 7.8 2.9 11 0v-5"/><path d="M21.5 9v7"/></svg><span>Learn</span></button><button type="button" class="mobile-nav-btn" id="mobileMoreBtn" aria-label="More navigation" aria-expanded="false"><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg><span>More</span></button></nav>`;
 
 const LEARN_HUB=`<section class="page" id="learnhub"><div class="learn-center-head"><div><div class="eyebrow">Learning center</div><h1>Dispatcher Learning Hub</h1><p class="sub">Everything for calls, negotiation, terminology and real-world situations — organized for fast use during a shift.</p></div><div class="learn-stats"><span class="learn-stat">Phrasebook</span><span class="learn-stat">Flashcards</span><span class="learn-stat">Scenarios</span><span class="learn-stat">Terminology</span></div></div>
 <div class="learn-module-grid">
@@ -71,7 +115,10 @@ function esc(s){return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/<
 
 const EXTRA_JS=`<script>(function(){
  const nav=document.getElementById('mobileBottomNav');
- if(nav){nav.querySelectorAll('[data-mobile-page]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.mobilePage;if(typeof go==='function')go(id);nav.querySelectorAll('[data-mobile-page]').forEach(x=>x.classList.toggle('active',x===btn));}));const more=document.getElementById('mobileMoreBtn');if(more)more.addEventListener('click',()=>{const side=document.getElementById('sidebar');if(!side)return;side.classList.toggle('open');more.setAttribute('aria-expanded',String(side.classList.contains('open')));});
+ if(nav){const learningIds=new Set(['learnhub','phrases','flashcards','situations','terminology']);
+ function updateMobile(id){const selected=learningIds.has(id)?'learnhub':id;nav.querySelectorAll('[data-mobile-page]').forEach(btn=>{const active=btn.dataset.mobilePage===selected;btn.classList.toggle('active',active);if(active)btn.setAttribute('aria-current','page');else btn.removeAttribute('aria-current')})}
+ if(typeof go==='function'){const originalGo=go;go=function(id){originalGo(id);updateMobile(id);document.getElementById('mobileMoreBtn')?.setAttribute('aria-expanded','false')}}
+ nav.querySelectorAll('[data-mobile-page]').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.mobilePage;if(typeof go==='function')go(id);updateMobile(id);}));const more=document.getElementById('mobileMoreBtn');if(more)more.addEventListener('click',()=>{const side=document.getElementById('sidebar');if(!side)return;side.classList.toggle('open');more.setAttribute('aria-expanded',String(side.classList.contains('open')));});
  document.addEventListener('click',e=>{const side=document.getElementById('sidebar');if(!side?.classList.contains('open'))return;if(side.contains(e.target)||document.getElementById('mobileMoreBtn')?.contains(e.target))return;side.classList.remove('open');document.getElementById('mobileMoreBtn')?.setAttribute('aria-expanded','false');});}
  document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',async()=>{const t=btn.getAttribute('data-copy');try{await navigator.clipboard.writeText(t);btn.textContent='Copied ✓';setTimeout(()=>btn.textContent='Copy',1200)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();btn.textContent='Copied ✓';setTimeout(()=>btn.textContent='Copy',1200)}}));
  const labels={phrases:['💬','Phrasebook','Broker & driver phrases'],flashcards:['🧠','Flashcards','Practice & review'],situations:['⚡','Situation Assistant','Real-world problems'],terminology:['📚','Terminology','Terms & abbreviations']};
