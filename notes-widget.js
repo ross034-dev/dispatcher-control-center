@@ -68,14 +68,15 @@ function position(el,id,index){
  if(Number.isFinite(cfg.left)&&Number.isFinite(cfg.top)){
    const w=el.offsetWidth||340,h=el.offsetHeight||320;
    el.style.left=Math.max(4,Math.min(window.innerWidth-w-4,cfg.left))+"px";
-   el.style.top=Math.max(4,Math.min(window.innerHeight-h-4,cfg.top))+"px";
+   el.style.top=Math.max(4,Math.min(window.innerHeight-h-(window.innerWidth<760?105:4),cfg.top))+"px";
    el.style.right="auto";el.style.bottom="auto";
  }else{
    const compact=window.innerWidth<760;
    const offset=index*22;
    const w=el.offsetWidth||340;
    const x=compact?Math.max(6,window.innerWidth-w-9):Math.max(6,window.innerWidth-w-24-offset);
-   const y=compact?Math.max(6,window.innerHeight-390-offset):Math.max(6,window.innerHeight-388-offset);
+   const h=el.getBoundingClientRect().height||355;
+   const y=compact?Math.max(6,window.innerHeight-h-110-offset):Math.max(6,window.innerHeight-h-24-offset);
    el.style.left=x+"px";el.style.top=y+"px";el.style.right="auto";el.style.bottom="auto";
  }
 }
@@ -108,7 +109,7 @@ function createSticky(n,index){
   if(!drag)return;
   const width=el.getBoundingClientRect().width,height=el.getBoundingClientRect().height;
   cfg.left=Math.round(Math.max(4,Math.min(window.innerWidth-width-4,drag.l+e.clientX-drag.x)));
-  cfg.top=Math.round(Math.max(4,Math.min(window.innerHeight-height-4,drag.t+e.clientY-drag.y)));
+  cfg.top=Math.round(Math.max(4,Math.min(window.innerHeight-height-(window.innerWidth<760?105:4),drag.t+e.clientY-drag.y)));
   el.style.left=cfg.left+"px";el.style.top=cfg.top+"px";
  });
  const stop=()=>{if(drag){drag=null;saveNow()}};
