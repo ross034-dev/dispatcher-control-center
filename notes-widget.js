@@ -19,7 +19,7 @@ const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(notes));localStor
 const time=t=>new Date(t||Date.now()).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"});
 const byId=id=>notes.find(n=>n.id===id);
 const make=()=>({id:"note-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8),title:"Untitled note",text:"",color:"sand",created:Date.now(),updated:Date.now()});
-const page=document.createElement("section");page.id="notes";page.className="page";page.innerHTML='<div class="dcc-notes-heading"><div><div class="eyebrow">WORKSPACE / QUICK NOTES</div><h1>Notes</h1><p class="sub">Keep load details, reminders and quick thoughts together. Pin any note so it follows you throughout the app.</p></div><div class="dcc-notes-buttons"><button class="btn primary" id="dnCreate">+ New note</button><button class="btn" id="dnExport">Export notes</button></div></div><div class="dcc-notes-layout"><aside class="dcc-notes-list"><div class="dcc-notes-listhead"><b>My notes</b><span id="dnCount"></span></div><input class="input" id="dnSearch" placeholder="Search your notes..."><div id="dnItems"></div></aside><div class="dcc-notes-editor"><div class="dcc-notes-editor-head"><span class="dcc-notes-eyebrow">NOTEPAD</span><span class="dcc-save-status" id="dnSave">Saved on this device</span></div><input id="dnTitle" class="dcc-notes-title" maxlength="120" placeholder="Note title" aria-label="Note title"><div class="dcc-notes-meta"><span id="dnUpdated"></span><span id="dnWords"></span></div><textarea id="dnText" spellcheck="true" maxlength="35000" placeholder="Type your notes here...&#10;&#10;Example:&#10;Truck 704 — pickup 4 PM&#10;Broker: follow up about detention&#10;Driver needs new appointment"></textarea><div class="dcc-notes-bottom"><button class="btn" id="dnPin">📌 Make sticky</button><button class="btn" id="dnDelete">Delete note</button></div><p class="dcc-notes-footnote">Autosaved locally on this device. Do not store sensitive passwords, CDL numbers or personal documents in quick notes. Sync between devices is not enabled yet.</p></div></div>';
+const page=document.createElement("section");page.id="notes";page.className="page";page.innerHTML='<div class="dcc-notes-heading"><div><div class="eyebrow">WORKSPACE / QUICK NOTES</div><h1>Notes</h1><p class="sub">Keep load details, reminders and quick thoughts together. Pin any note so it follows you throughout the app.</p></div><div class="dcc-notes-buttons"><button class="btn primary" id="dnCreate">+ New note</button><button class="btn" id="dnExport">Export notes</button></div></div><div class="dcc-notes-layout"><aside class="dcc-notes-list"><div class="dcc-notes-listhead"><b>My notes</b><span id="dnCount"></span></div><input class="input" id="dnSearch" placeholder="Search your notes..."><div id="dnItems"></div></aside><div class="dcc-notes-editor"><div class="dcc-notes-editor-head"><span class="dcc-notes-eyebrow">NOTEPAD</span><span class="dcc-save-status" id="dnSave">Saved on this device</span></div><input id="dnTitle" class="dcc-notes-title" maxlength="120" placeholder="Note title" aria-label="Note title"><div class="dcc-notes-meta"><span id="dnUpdated"></span><span id="dnWords"></span></div><textarea id="dnText" spellcheck="true" maxlength="35000" placeholder="Type your notes here...&#10;&#10;Example:&#10;Truck 704 — pickup 4 PM&#10;Broker: follow up about detention&#10;Driver needs new appointment"></textarea><div class="dn-copy-tools"><span class="dn-copy-label">QUICK COPY</span><button type="button" class="btn" id="dnCopyTitle">Copy title</button><button type="button" class="btn" id="dnCopyText">Copy text</button><button type="button" class="btn" id="dnCopyLine" title="Copy selected text or the line at your cursor">Copy line / selection</button><button type="button" class="btn" id="dnCopyAll">Copy both</button></div><div class="dcc-notes-bottom"><button class="btn" id="dnPin">📌 Make sticky</button><button class="btn" id="dnDelete">Delete note</button></div><p class="dcc-notes-footnote">Autosaved locally on this device. Do not store sensitive passwords, CDL numbers or personal documents in quick notes. Sync between devices is not enabled yet.</p></div></div>';
 document.querySelector("main.content")?.append(page);
 const nav=document.createElement("button");nav.type="button";nav.className="nav-btn";nav.dataset.page="notes";nav.innerHTML='<span class="dot"></span>Notes';
 const docsNav=document.querySelector('.sidebar .nav-btn[data-page="documents"]');
@@ -28,6 +28,17 @@ nav.addEventListener("click",()=>{if(typeof go==="function")go("notes");});
 
 const $=id=>document.getElementById(id);
 const title=$("dnTitle"),text=$("dnText");
+async function copyText(value,button){
+ if(!value){status("Nothing to copy");return}
+ try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(value)}else throw new Error("Clipboard unavailable")}
+ catch(err){
+  const temp=document.createElement("textarea");temp.value=value;temp.style.position="fixed";temp.style.opacity="0";temp.style.left="-10000px";document.body.append(temp);temp.focus();temp.select();
+  let ok=false;try{ok=document.execCommand("copy")}catch{}temp.remove();
+  if(!ok){status("Copy failed — select the text manually");return}
+ }
+ status("Copied to clipboard ✓");if(button){const label=button.textContent;button.textContent="Copied ✓";setTimeout(()=>{if(button.isConnected)button.textContent=label},1400)}
+}
+function lineOrSelection(field){const value=field.value||"";const start=field.selectionStart||0,end=field.selectionEnd||0;if(end>start)return value.slice(start,end);const a=value.lastIndexOf("\n",Math.max(0,start-1))+1;const z=value.indexOf("\n",start);return value.slice(a,z<0?value.length:z)}
 const dock=document.createElement("div");dock.id="dnStickyDock";dock.setAttribute("aria-label","Pinned notes");document.body.append(dock);
 const widgets=document.createElement("div");widgets.id="dnStickyWidgets";document.body.append(widgets);
 let topZ=10300;
@@ -46,7 +57,7 @@ function renderList(){
 }
 function renderEditor(){
  const n=byId(current),enabled=!!n;
- for(const field of [title,text,$("dnPin"),$("dnDelete")])field.disabled=!enabled;
+ for(const field of [title,text,$("dnPin"),$("dnDelete"),$("dnCopyTitle"),$("dnCopyText"),$("dnCopyLine"),$("dnCopyAll")])field.disabled=!enabled;
  if(document.activeElement!==title)title.value=n?.title||"";
  if(document.activeElement!==text)text.value=n?.text||"";
  $("dnUpdated").textContent=n?"Updated "+time(n.updated):"Create a note to get started";
@@ -83,10 +94,14 @@ function position(el,id,index){
 function createSticky(n,index){
  const el=document.createElement("section");el.className="dn-sticky-card";
  el.dataset.stickyId=n.id;el.setAttribute("aria-label","Sticky note: "+formatTitle(n));
- el.innerHTML='<div class="dn-card-bar"><span class="dn-card-handle" aria-hidden="true">● STICKY NOTE</span><div class="dn-card-actions"><button type="button" data-act="min" title="Minimize" aria-label="Minimize">−</button><button type="button" data-act="close" title="Close; keep pinned" aria-label="Close">×</button></div></div><div class="dn-card-body"><input class="dn-card-title" maxlength="120" aria-label="Sticky note title"><textarea class="dn-card-text" maxlength="35000" spellcheck="true" aria-label="Sticky note text"></textarea><div class="dn-card-bottom"><span>Autosaved locally</span><div><button data-act="open" type="button">Open note ↗</button><button data-act="unpin" type="button" title="Remove sticky pin">Unpin</button></div></div></div>';
+ el.innerHTML='<div class="dn-card-bar"><span class="dn-card-handle" aria-hidden="true">● STICKY NOTE</span><div class="dn-card-actions"><button type="button" data-act="min" title="Minimize" aria-label="Minimize">−</button><button type="button" data-act="close" title="Close; keep pinned" aria-label="Close">×</button></div></div><div class="dn-card-body"><input class="dn-card-title" maxlength="120" aria-label="Sticky note title"><textarea class="dn-card-text" maxlength="35000" spellcheck="true" aria-label="Sticky note text"></textarea><div class="dn-card-copy"><button type="button" data-copy="text">Copy text</button><button type="button" data-copy="line">Copy line</button><button type="button" data-copy="all">Copy all</button></div><div class="dn-card-bottom"><span>Autosaved locally</span><div><button data-act="open" type="button">Open note ↗</button><button data-act="unpin" type="button" title="Remove sticky pin">Unpin</button></div></div></div>';
  const cfg=ui.pins[n.id];el.classList.toggle("dn-minimized",!!cfg.minimized);
  const input=el.querySelector(".dn-card-title"),area=el.querySelector(".dn-card-text");
  input.value=n.title;area.value=n.text;
+ el.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{
+   const note=byId(n.id);if(!note)return;const mode=b.dataset.copy;
+   copyText(mode==="text"?note.text:mode==="all"?note.title+"\n"+note.text:lineOrSelection(area),b);
+ });
  input.addEventListener("input",e=>update(n.id,"title",e.target.value));
  area.addEventListener("input",e=>update(n.id,"text",e.target.value));
  el.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>{
@@ -152,6 +167,10 @@ $("dnExport").onclick=()=>{
 $("dnSearch").addEventListener("input",renderList);
 title.addEventListener("input",e=>update(current,"title",e.target.value));
 text.addEventListener("input",e=>update(current,"text",e.target.value));
+$("dnCopyTitle").onclick=e=>{const n=byId(current);if(n)copyText(n.title,e.currentTarget)};
+$("dnCopyText").onclick=e=>{const n=byId(current);if(n)copyText(n.text,e.currentTarget)};
+$("dnCopyLine").onclick=e=>copyText(lineOrSelection(text),e.currentTarget);
+$("dnCopyAll").onclick=e=>{const n=byId(current);if(n)copyText(n.title+"\n"+n.text,e.currentTarget)};
 $("dnPin").onclick=()=>{
  const n=byId(current);if(!n)return;
  if(pinned(n.id)){delete ui.pins[n.id]}else{
